@@ -1,0 +1,207 @@
+{% extends "basic.html" %}
+
+{% block title %}Stock Market Tracker{% endblock %}
+
+{% block body %}
+<div class="container mx-auto my-8">
+    <div class="flex justify-center mb-6 relative">
+        <div class="bg-white shadow-lg rounded-full flex items-center p-3 w-full max-w-lg">
+            <input type="text" placeholder="Search Stock" id="searchInput"
+                class="flex-grow bg-gray-100 rounded-full py-3 px-4 text-black focus:outline-none text-xl" autocomplete="off"/>
+        </div>
+
+        <!-- Suggestions Box -->
+        <div id="suggestions"
+            class="absolute bg-white border border-gray-300 rounded-lg shadow-lg w-full max-w-md top-full mt-3 z-10 hidden">
+            <div id="suggestionList" class="max-h-48 overflow-y-auto"></div>
+            <div id="noStockMessage" class="p-2 text-center text-gray-600 hidden">No stock found</div>
+        </div>
+    </div>
+
+    <div class="flex justify-center mb-4">
+        <a id="showAllStocks" class="bg-gray-800 text-white font-semibold py-2 px-4 rounded hover:bg-gray-700 transition duration-200" href="{% url 'all_stock' %}">
+            Show All Stocks
+        </a>
+    </div>
+
+    <h2 class="text-xl font-bold mb-4 text-center mt-20">Indices Prices</h2>
+
+    <!-- Scrollable div for stock index cards -->
+    <div class="flex justify-center mb-5 mt-5">
+        <div class="bg-white shadow-lg rounded-lg p-5 max-w-5xl overflow-x-auto whitespace-nowrap scrollbar">
+            {% for index_name, data in index_data.items %}
+            <div
+                class="inline-block bg-gray-100 shadow-lg rounded-lg p-5 m-2 w-64 transition-transform duration-200 ease-in-out transform hover:scale-105 hover:shadow-xl stock-card"
+                data-stock-name="{{ index_name }}"
+                onclick="loadIndex('{{ index_name }}')"
+                >
+                <h3 class="text-lg font-bold">{{ index_name }}</h3>
+                <p
+                    class="text-2xl font-semibold {% if data.percentage_change >= 0 %}text-green-600{% else %}text-red-600{% endif %}">
+                    ₹{{ data.current_price|floatformat:2 }}
+                </p>
+                <span class="{% if data.value_change >= 0 %}text-green-500{% else %}text-red-500{% endif %}">
+                    ₹{{ data.value_change|floatformat:2 }}
+                </span>
+                <p>
+                    {% if data.percentage_change >= 0 %}
+                    <span class="text-green-500">&#x25B2; {{ data.percentage_change }}%</span> 
+                    {% else %}
+                    <span class="text-red-500">&#x25BC; {{ data.percentage_change }}%</span>
+                    {% endif %}
+                </p>
+            </div>
+            
+            <script>
+                function loadIndex(indexName) {
+                    const socketUrl = 'ws://' + window.location.host + '/ws/' + encodeURIComponent(indexName) + '/';
+                    const stockSocket = new WebSocket(socketUrl);
+            
+                    stockSocket.onmessage = function(e) {
+                        const data = JSON.parse(e.data);
+                        const stockCard = document.querySelector(`[data-stock-name="${indexName}"]`);
+                        console.log(data);
+                        
+                        if (stockCard) {
+                            stockCard.querySelector('p.text-2xl').innerHTML = '₹' + parseFloat(data.current_price).toFixed(2);  
+                            stockCard.querySelector('span').innerHTML = '₹' + parseFloat(data.value_change).toFixed(2);  
+            
+                            const percentageSpan = stockCard.querySelector('p:last-child span');
+                            percentageSpan.innerHTML = data.percentage_change + '%';
+            
+                            const colorClass = data.color === 'green' ? 'text-green-600' : 'text-red-600';
+                            stockCard.querySelector('p.text-2xl').className = 'text-2xl font-semibold ' + colorClass;
+                        }
+                    };
+            
+                    stockSocket.onclose = function(e) {
+                        console.error('WebSocket closed unexpectedly');
+                    };
+                }
+                loadIndex('{{index_name}}')
+            </script>
+            {% endfor %}
+            
+
+        </div>
+    </div>
+</div>
+{% block script %}
+<script>
+    $(document).ready(function() {
+        let highlightedIndex = -1; // Initialize highlightedIndex
+        let debounceTimer; // Timer variable for debouncing
+
+        $('#searchInput').on('input', function() {
+            const query = $(this).val().trim();
+            $('#suggestionList').empty(); // Clear previous suggestions
+            highlightedIndex = -1; // Reset highlighted index
+
+            // Clear the previous debounce timer
+            clearTimeout(debounceTimer);
+            // Set a new debounce timer
+            debounceTimer = setTimeout(function() {
+                if (query) {
+                    fetchStockData(query);
+                } else {
+                    $('#suggestions').hide(); // Hide suggestions if input is empty
+                    $('#noStockMessage').hide(); // Also hide no stock message
+                }
+            }, 300); // Adjust delay time (300 ms) as needed
+        });
+
+        function fetchStockData(query) {
+            const corsProxy = 'https://api.allorigins.win/get?url=';
+            const apiUrl = `https://query1.finance.yahoo.com/v1/finance/search?q=${encodeURIComponent(query)}`;
+
+            $.ajax({
+                url: `${corsProxy}${encodeURIComponent(apiUrl)}`,
+                method: 'GET',
+                success: function(data) {
+                    const responseData = JSON.parse(data.contents);
+                    $('#suggestionList').empty(); // Clear previous suggestions
+                    if (responseData.quotes && responseData.quotes.length > 0) {
+                        responseData.quotes.forEach(stock => {
+                            const cardDiv = $('<div></div>')
+                                .addClass('bg-gray-100 rounded-lg p-2 m-2 cursor-pointer transition-transform duration-200 ease-in-out transform hover:scale-104 hover:shadow-xl')
+                                .text(`${stock.symbol}: ${stock.longname || stock.shortname}`)
+                                .click(function() {
+                                    selectStock(stock.symbol); // Reusable function for selection
+                                });
+
+                            $('#suggestionList').append(cardDiv);
+                        });
+                        $('#suggestions').show(); // Show suggestions
+                        $('#noStockMessage').hide(); // Hide no stock message
+                    } else {
+                        $('#noStockMessage').text('No stock found').show(); // Handle no stocks found
+                        $('#suggestions').show(); // Still show suggestions box for the message
+                    }
+                },
+                error: function(xhr) {
+                    if (xhr.status === 429) {
+                        // Handle 429 Too Many Requests error
+                        $('#noStockMessage').text('Too many requests. Please wait a moment.').show();
+                    } else {
+                        $('#noStockMessage').text('Error fetching stock data').show(); // Handle other errors
+                    }
+                }
+            });
+        }
+
+        // Keyboard navigation for suggestions
+        $('#searchInput').on('keydown', function(event) {
+            const suggestions = $('#suggestionList').children();
+            if (event.key === 'ArrowDown') {
+                highlightedIndex = (highlightedIndex + 1) % suggestions.length;
+                updateHighlightedSuggestion(suggestions);
+            } else if (event.key === 'ArrowUp') {
+                highlightedIndex = (highlightedIndex - 1 + suggestions.length) % suggestions.length;
+                updateHighlightedSuggestion(suggestions);
+            } else if (event.key === 'Enter') {
+                if (highlightedIndex >= 0 && highlightedIndex < suggestions.length) {
+                    const selectedStock = suggestions[highlightedIndex].textContent.split(':')[0]; // Get selected symbol
+                    selectStock(selectedStock); // Call reusable selection function
+                }
+            }
+        });
+
+        function selectStock(symbol) {
+            $('#searchInput').val(symbol);
+            $('#suggestions').hide(); // Hide suggestions on selection
+            window.location.href = `/stock/${symbol}/`; // Redirect to stock page
+        }
+
+        function updateHighlightedSuggestion(suggestions) {
+            Array.from(suggestions).forEach((suggestion, index) => {
+                $(suggestion).toggleClass('bg-gray-300', index === highlightedIndex);
+            });
+            if (highlightedIndex >= 0 && highlightedIndex < suggestions.length) {
+                const highlightedSuggestion = suggestions[highlightedIndex];
+                const suggestionListRect = $('#suggestionList')[0].getBoundingClientRect();
+                const highlightedRect = highlightedSuggestion.getBoundingClientRect();
+
+                // Scroll to ensure the highlighted suggestion is visible
+                if (highlightedRect.bottom > suggestionListRect.bottom) {
+                    $('#suggestionList')[0].scrollTop += highlightedRect.bottom - suggestionListRect.bottom;
+                } else if (highlightedRect.top < suggestionListRect.top) {
+                    $('#suggestionList')[0].scrollTop -= suggestionListRect.top - highlightedRect.top;
+                }
+            }
+        }
+
+        // Close suggestions on clicking outside
+        $(document).on('click', function(event) {
+            if (!$(event.target).closest('#suggestions, #searchInput').length) {
+                $('#suggestions').hide(); // Hide suggestions if clicked outside
+            }
+        });
+
+
+        window.loadIndex = function(indexName) {
+            window.location.href = `/stock/${indexName}/`;  // Update this URL to match your URL pattern for index detail
+        };
+    });
+</script>
+{% endblock %}
+{% endblock %}

@@ -1,0 +1,56 @@
+{% extends "basic.html" %}
+
+{% block title %}{{ index.name }} ({{ index.symbol }}) - Index Details{% endblock %}
+
+{% block body %}
+<div class="container mx-auto my-8 p-4 bg-white shadow-lg rounded-lg">
+    <!-- Index Name and Symbol -->
+    <h1 class="text-3xl font-bold mb-4">
+        {{ index.name }} 
+        <span class="text-lg font-semibold text-gray-500">({{ index.symbol }})</span>
+        <p class="text-xs font-medium mt-1">
+            <a href="{{ index.website }}" class="text-gray-500 hover:text-blue-700" target="_blank">({{ index.website }})</a>
+        </p>
+    </h1>
+
+    <!-- Current Price and Price Change -->
+    <div class="mb-4">
+        <p class="text-xl">
+            <span class="text-5xl {% if index.value_change >= 0 %}text-green-600{% else %}text-red-600{% endif %} font-semibold">
+                ₹{{ index.current_price|floatformat:2 }}
+            </span>
+        </p>
+        <p class="text-lg">
+            <span class="{% if index.value_change >= 0 %}text-green-600{% else %}text-red-600{% endif %} font-semibold">
+                ₹{{ index.value_change|floatformat:2 }} 
+                ({{ index.percentage_change|floatformat:2 }}%)
+            </span>
+        </p>
+    </div>
+
+    <!-- Index Details Section -->
+    <h2 class="text-2xl font-semibold mb-2 border-b pb-2">Details</h2>
+    <div class="grid grid-cols-2 gap-4 mt-4">
+        <!-- Market Cap -->
+        <div class="bg-gray-50 p-4 rounded-lg shadow-md">
+            <p class="text-sm text-gray-600">Market Cap</p>
+            <p class="text-xl font-bold">₹{{ index.market_cap }}</p>
+        </div>
+        <!-- P/E Ratio -->
+        <div class="bg-gray-50 p-4 rounded-lg shadow-md">
+            <p class="text-sm text-gray-600">P/E Ratio</p>
+            <p class="text-xl font-bold">{{ index.pe_ratio|default:"N/A" }}</p>
+        </div>
+        <!-- Dividend Yield -->
+        <div class="bg-gray-50 p-4 rounded-lg shadow-md">
+            <p class="text-sm text-gray-600">Dividend Yield</p>
+            <p class="text-xl font-bold">{{ index.dividend_yield|floatformat:2|default:"N/A" }}%</p>
+        </div>
+        <!-- Website -->
+        <div class="bg-gray-50 p-4 rounded-lg shadow-md">
+            <p class="text-sm text-gray-600">Website</p>
+            <a href="{{ index.website }}" class="text-blue-600 hover:text-blue-800">{{ index.website }}</a>
+        </div>
+    </div>
+</div>
+{% endblock %}

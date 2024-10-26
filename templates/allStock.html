@@ -1,0 +1,126 @@
+{% extends "basic.html" %}
+
+{% block title %}All Stocks{% endblock %}
+
+{% block body %}
+
+<div class="container mx-auto my-8">
+    <h2 class="text-2xl font-bold mb-4 text-center">All Stocks</h2>
+
+    <!-- <div class="flex justify-center mb-6">
+        <input type="text" placeholder="Search Stock" id="searchInput"
+               class="flex-grow bg-gray-100 rounded-full py-3 px-4 text-black focus:outline-none text-xl" />
+    </div> -->
+
+    <div id="stock-list" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        {% for symbol in stock_details %}
+           <a href="{% url 'stock_detail' symbol.symbol %}" target="_blank" rel="noopener noreferrer"> <div class="stock-item bg-white p-6 rounded-lg shadow-lg hover:shadow-2xl transition-shadow duration-300">
+                <!-- Company Name and Symbol -->
+                <p class="text-lg font-semibold text-gray-700">{{ symbol.company_name }} 
+                    <span class="text-sm text-gray-500">({{ symbol.symbol }})</span>
+                </p>
+                
+                <!-- Current Price -->
+                <p class="{% if symbol.price_change > 0 %}text-green-500 text-2xl font-bold mt-4{% else %}text-red-500 text-2xl font-bold mt-4{% endif %}">{{ currency_symbol }}{{ symbol.current_price }}</p>
+    
+                <!-- Price Change and Percentage -->
+                <p class="text-lg mt-2">
+                    <span class="{% if symbol.price_change > 0 %}text-green-500{% else %}text-red-500{% endif %}">
+                        {{ symbol.price_change }}
+                    </span>
+                    <span class="{% if symbol.price_change > 0 %}text-green-500{% else %}text-red-500{% endif %}">
+                        ({{ symbol.percentage_change }}%)
+                    </span>
+                </p>
+            </div>
+            </a>
+        {% endfor %}
+    </div>
+    
+
+    <div id="loading" class="text-center mt-4 hidden">
+        <p>Loading more stocks...</p>
+    </div>
+</div>
+
+<script>
+    let offset = 10;
+    const allSymbols = {{ all_symbols|safe }}; // Load all symbols in a JS array
+    // console.log(allSymbols);
+    
+    const stockList = $('#stock-list');
+    let isLoading = false;  // Prevent multiple simultaneous requests
+
+    $(window).on('scroll', function() {
+        if (!isLoading && $(window).scrollTop() + $(window).height() >= $(document).height() - 100) {
+            loadMoreStocks();
+        }
+    });
+
+    function loadMoreStocks() {
+        const nextSymbolsData = allSymbols.slice(offset, offset + 20);
+        offset += 10;
+          // Add this line to check the offset value
+
+        if (nextSymbolsData.length === 0) {
+            return; // Stop if no more data
+        }
+        const nextSymbols = nextSymbolsData.map(stock => stock.displaySymbol);
+        console.log("Offset:", offset,nextSymbols);
+        isLoading = true;  // Set loading state to true
+        $('#loading').removeClass('hidden');
+
+        $.ajax({
+            url: '{% url "load_more_stocks" %}',
+            type: 'POST',
+            data: {
+                'symbols': nextSymbols,
+                'csrfmiddlewaretoken': '{{ csrf_token }}'
+            },
+            success: function(response) {
+                console.log(response);
+                
+                const stockDetails = response.stock_details;
+                stockDetails.forEach(function(stock) {
+                    const stockItem = `
+   <a href="/stock/${stock.symbol}/"  target="_blank" rel="noopener noreferrer">  <div class="stock-item bg-white p-6 rounded-lg shadow-lg hover:shadow-2xl transition-shadow duration-300">
+        <!-- Company Name and Symbol -->
+        <p class="text-lg font-semibold text-gray-700">
+            ${stock.company_name} 
+            <span class="text-sm text-gray-500">(${stock.symbol})</span>
+        </p>
+
+        <!-- Current Price -->
+        <p  class="${stock.price_change > 0 ? 'text-green-500 text-2xl font-bold mt-4' : 'text-red-500 text-2xl font-bold mt-4'}">
+            ${stock.current_price ? `$${stock.current_price}` : 'N/A'}
+        </p>
+
+        <!-- Price Change and Percentage -->
+        <p class="text-lg mt-2">
+            <span class="${stock.price_change > 0 ? 'text-green-500' : 'text-red-500'}">
+                ${stock.price_change}
+            </span>
+            <span class="${stock.price_change > 0 ? 'text-green-500' : 'text-red-500'}">
+                (${stock.percentage_change}%)
+            </span>
+        </p>
+    </div></a>
+`;
+
+                    stockList.append(stockItem);
+                });
+
+                isLoading = false;  // Reset loading state
+                $('#loading').addClass('hidden');
+            },
+            error: function() {
+                alert('Failed to load more stocks.');
+                isLoading = false;  // Reset loading state on error
+                $('#loading').addClass('hidden');
+            }
+        });
+    }
+
+</script>
+
+{% endblock %}

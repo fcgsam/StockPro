@@ -1,0 +1,488 @@
+{% extends "basic.html" %}
+
+{% block title %}{{ stock.name }} ({{ stock.symbol }}) - Stock Details{% endblock %}
+
+{% block body %}
+<div class="container mx-auto my-8 p-4 bg-white shadow-lg rounded-lg">
+    <!-- Stock Name and Symbol -->
+    <h1 class="text-3xl font-bold mb-4">
+        {{ stock.name }} 
+        <span class="text-lg font-semibold text-gray-500">({{ stock.symbol }})</span>
+        <p class="text-xs font-medium mt-1">
+            <a href="{{ stock.website }}" class="text-gray-500 hover:text-blue-700" target="_blank">({{ stock.website }})</a>
+        </p>
+    </h1>
+
+    <!-- Market Status -->
+    <div class="mb-4 flex justify-between items-center">
+        <div class="mb-4 text-left">
+            <p class="text-xl">
+                <span class="text-5xl {% if stock.value_change >= 0 %}text-green-600{% else %}text-red-600{% endif %} font-semibold" id="current_price">
+                    {{ stock.currency_symbol }}{{ stock.current_price|floatformat:2 }}
+                </span>
+            </p>
+            <p class="text-lg" >
+                <span class="{% if stock.value_change >= 0 %}text-green-600{% else %}text-red-600{% endif %} font-semibold" id="value_change">
+                    {{ stock.currency_symbol }}{{ stock.value_change|floatformat:2 }} 
+
+                </span>
+                <span class="{% if stock.value_change >= 0 %}text-green-600{% else %}text-red-600{% endif %} font-semibold" id="value_percentage_change">
+                   ({{stock.percentage_change}})
+
+                </span>
+            </p>
+        </div>
+        <div class="mb-4 text-right">
+            <p class="market-status {% if stock.market_open == 'Open' %}market-open{% else %}market-closed{% endif %}">
+                {% if stock.market_open == 'Open' %}Open{% else %}Closed{% endif %}
+            </p>
+        </div>
+    </div>
+
+    
+
+
+    <!-- Price History Chart -->
+    <!-- Price History Chart -->
+<h2 class="text-2xl font-semibold mb-2 border-b pb-2 mt-6">Price History</h2>
+<div class="flex flex-col md:flex-row items-start mt-4">
+    <div class="w-full md:w-1/2">
+        <!-- Timeframe Selection Buttons -->
+        <div class="flex justify-center space-x-2 mt-2 mb-4">
+            <button class="timeframe-button active text-sm px-2 py-1 md:px-3 md:py-1.5" data-period="1d">1D</button>
+            <button class="timeframe-button text-sm px-2 py-1 md:px-3 md:py-1.5" data-period="1w">1W</button>
+            <button class="timeframe-button text-sm px-2 py-1 md:px-3 md:py-1.5" data-period="1mo">1Mo</button>
+            <button class="timeframe-button text-sm px-2 py-1 md:px-3 md:py-1.5" data-period="3mo">3Mo</button>
+            <button class="timeframe-button text-sm px-2 py-1 md:px-3 md:py-1.5" data-period="1yr">1Y</button>
+            <button class="timeframe-button text-sm px-2 py-1 md:px-3 md:py-1.5" data-period="5yr">5Y</button>
+            <button class="timeframe-button text-sm px-2 py-1 md:px-3 md:py-1.5" data-period="max">All</button>
+        </div>
+        
+
+        <canvas id="priceChart" width="300" height="150"></canvas>
+    </div>
+    <div class="w-full md:w-1/2 ml-4">
+        <h2 class="text-2xl font-semibold mb-2 border-b pb-2">Details</h2>
+        <div class="grid grid-cols-2 gap-4 mt-4">
+            <div class="bg-gray-50 p-4 rounded-lg shadow-md">
+                <p class="text-sm text-gray-600">52 Weeks Low</p>
+                <p class="text-xl font-bold">{{ stock.fiftyTwoWeekLow }}</p>
+            </div>
+            <div class="bg-gray-50 p-4 rounded-lg shadow-md">
+                <p class="text-sm text-gray-600">52 Weeks High</p>
+                <p class="text-xl font-bold">{{ stock.fiftyTwoWeekHigh }}</p>
+            </div>
+            <div class="bg-gray-50 p-4 rounded-lg shadow-md">
+                <p class="text-sm text-gray-600">Market Cap</p>
+                <p class="text-xl font-bold">{{ stock.currency_symbol }}{{ stock.market_cap }}</p>
+            </div>
+            <div class="bg-gray-50 p-4 rounded-lg shadow-md">
+                <p class="text-sm text-gray-600">P/E Ratio</p>
+                <p class="text-xl font-bold">{{ stock.pe_ratio|default:"N/A" }}</p>
+            </div>
+            <div class="bg-gray-50 p-4 rounded-lg shadow-md">
+                <p class="text-sm text-gray-600">Dividend Yield</p>
+                <p class="text-xl font-bold">{{ stock.dividend_yield|floatformat:2|default:"N/A" }}%</p>
+            </div>
+            <div class="bg-gray-50 p-4 rounded-lg shadow-md">
+                <p class="text-sm text-gray-600">Industry</p>
+                <p class="text-xl font-bold">{{ stock.industry }}</p>
+            </div>
+            <div class="bg-gray-50 p-4 rounded-lg shadow-md">
+                <p class="text-sm text-gray-600">Sector</p>
+                <p class="text-xl font-bold">{{ stock.sector }}</p>
+            </div>
+            
+        </div>
+    </div>
+</div>
+
+
+    <!-- Company Summary Section -->
+    <h2 class="text-2xl font-semibold mb-2 border-b pb-2 mt-6">Company Summary</h2>
+    <div class="bg-gray-50 p-4 rounded-lg shadow-md">
+        <p class="text-sm text-gray-600 font-bold">Summary</p>
+        <div class="summary-content">
+            <p class="text-md summary-text">{{ stock.company_summary|default:"No summary available." }}</p>
+        </div>
+        <button class="read-more-btn" onclick="toggleReadMore()">Read More</button>
+    </div>
+    
+
+        
+
+    
+    <script>
+        function toggleReadMore() {
+            const summaryText = document.querySelector('.summary-text');
+            summaryText.classList.toggle('expanded');
+            const button = document.querySelector('.read-more-btn');
+            button.textContent = summaryText.classList.contains('expanded') ? 'Read Less' : 'Read More';
+        }
+    </script>
+    
+    
+    <!-- Financial Information Section -->
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mt-4">
+        <!-- Financial Information -->
+        <div>
+            <h2 class="text-2xl font-semibold mb-4 border-b pb-2">Financial Information</h2>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
+                <!-- Total Cash -->
+                <div class="bg-gray-50 p-4 rounded-lg shadow-md">
+                    <p class="text-sm text-gray-600">Total Cash</p>
+                    <p class="text-xl font-bold">{{ stock.total_cash }}</p>
+                </div>
+                <!-- Total Cash Per Share -->
+                <div class="bg-gray-50 p-4 rounded-lg shadow-md">
+                    <p class="text-sm text-gray-600">Total Cash Per Share</p>
+                    <p class="text-xl font-bold">{{ stock.total_cash_per_share }}</p>
+                </div>
+                <!-- EBITDA -->
+                <div class="bg-gray-50 p-4 rounded-lg shadow-md">
+                    <p class="text-sm text-gray-600">EBITDA</p>
+                    <p class="text-xl font-bold">{{ stock.ebitda }}</p>
+                </div>
+                <!-- Total Debt -->
+                <div class="bg-gray-50 p-4 rounded-lg shadow-md">
+                    <p class="text-sm text-gray-600">Total Debt</p>
+                    <p class="text-xl font-bold">{{ stock.total_debt }}</p>
+                </div>
+                <!-- Total Revenue -->
+                <div class="bg-gray-50 p-4 rounded-lg shadow-md">
+                    <p class="text-sm text-gray-600">Total Revenue</p>
+                    <p class="text-xl font-bold">{{ stock.total_revenue }}</p>
+                </div>
+                <!-- Debt to Equity -->
+                <div class="bg-gray-50 p-4 rounded-lg shadow-md">
+                    <p class="text-sm text-gray-600">Debt to Equity</p>
+                    <p class="text-xl font-bold">{{ stock.debt_to_equity }}</p>
+                </div>
+                <!-- Revenue Per Share -->
+                <div class="bg-gray-50 p-4 rounded-lg shadow-md">
+                    <p class="text-sm text-gray-600">Revenue Per Share</p>
+                    <p class="text-xl font-bold">{{ stock.revenue_per_share }}</p>
+                </div>
+                <!-- Earnings Growth -->
+                <div class="bg-gray-50 p-4 rounded-lg shadow-md">
+                    <p class="text-sm text-gray-600">Earnings Growth</p>
+                    <p class="text-xl font-bold">{{ stock.earnings_growth }}</p>
+                </div>
+                <!-- Revenue Growth -->
+                <div class="bg-gray-50 p-4 rounded-lg shadow-md">
+                    <p class="text-sm text-gray-600">Revenue Growth</p>
+                    <p class="text-xl font-bold">{{ stock.revenue_growth }}</p>
+                </div>
+                <!-- Gross Margins -->
+                <div class="bg-gray-50 p-4 rounded-lg shadow-md">
+                    <p class="text-sm text-gray-600">Gross Margins</p>
+                    <p class="text-xl font-bold">{{ stock.gross_margins }}</p>
+                </div>
+                <!-- EBITDA Margins -->
+                <div class="bg-gray-50 p-4 rounded-lg shadow-md">
+                    <p class="text-sm text-gray-600">EBITDA Margins</p>
+                    <p class="text-xl font-bold">{{ stock.ebitda_margins }}</p>
+                </div>
+                <!-- Operating Margins -->
+                <div class="bg-gray-50 p-4 rounded-lg shadow-md">
+                    <p class="text-sm text-gray-600">Operating Margins</p>
+                    <p class="text-xl font-bold">{{ stock.operating_margins }}</p>
+                </div>
+                <!-- Financial Currency -->
+                <div class="bg-gray-50 p-4 rounded-lg shadow-md">
+                    <p class="text-sm text-gray-600">Financial Currency</p>
+                    <p class="text-xl font-bold">{{ stock.financial_currency }}</p>
+                </div>
+                <!-- Trailing PEG Ratio -->
+                <div class="bg-gray-50 p-4 rounded-lg shadow-md">
+                    <p class="text-sm text-gray-600">Trailing PEG Ratio</p>
+                    <p class="text-xl font-bold">{{ stock.trailing_peg_ratio }}</p>
+                </div>
+            </div>
+        </div>
+    
+        <!-- Shareholder Info Section -->
+        <div>
+            <h2 class="text-2xl font-semibold mb-4 border-b pb-2 mt-6">Shareholder Information</h2>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
+                <div class="bg-gray-50 p-4 rounded-lg shadow-md">
+                    <p class="text-sm text-gray-600">Held Percent Insiders</p>
+                    <p class="text-xl font-bold">{{ stock.shareholder_details.held_percent_insiders|default:"N/A" }}%</p>
+                </div>
+                <div class="bg-gray-50 p-4 rounded-lg shadow-md">
+                    <p class="text-sm text-gray-600">Held Percent Institutions</p>
+                    <p class="text-xl font-bold">{{ stock.shareholder_details.held_percent_institutions|default:"N/A" }}%</p>
+                </div>
+                <div class="bg-gray-50 p-4 rounded-lg shadow-md">
+                    <p class="text-sm text-gray-600">Total Shares Outstanding</p>
+                    <p class="text-xl font-bold">{{ stock.shareholder_details.total_shares_outstanding|default:"N/A" }}</p>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    
+
+    <!-- Company Officers Section -->
+    <h2 class="text-2xl font-semibold mb-2 border-b pb-2 mt-6">Company Information</h2>
+    <div class="max-w-screen-lg mx-auto px-4">
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mt-4">
+            <!-- Company Officers -->
+            <div>
+                <h2 class="text-2xl font-semibold mb-2">Company Officers</h2>
+                <div class="space-y-4">
+                    {% for officer in stock.company_officers %}
+                    <div class="bg-gray-50 p-4 rounded-lg shadow-md">
+                        <p class="text-sm text-gray-600">Name</p>
+                        <p class="text-xl font-bold">{{ officer.name|default:"N/A" }}</p>
+                        <p class="text-sm text-gray-600">Title</p>
+                        <p class="text-xl font-bold">{{ officer.title|default:"N/A" }}</p>
+                        <p class="text-sm text-gray-600">Age</p>
+                        <p class="text-xl font-bold">{{ officer.age|default:"N/A" }}</p>
+                        <p class="text-sm text-gray-600">Total Pay</p>
+                        <p class="text-xl font-bold">{{ stock.currency_symbol }}{{ officer.total_pay|default:"N/A" }}</p>
+                    </div>
+                    {% empty %}
+                    <div class="bg-gray-50 p-4 rounded-lg shadow-md">
+                        <p class="text-xl font-bold">No company officers available.</p>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+    
+            <!-- Latest News -->
+            <div>
+                <h2 class="text-2xl font-semibold mb-2">Latest News</h2>
+                <div class="space-y-4">
+                    {% for article in stock.news %}
+                    <div class="bg-gray-50 p-4 rounded-lg shadow-md">
+                        <p class="text-sm text-gray-600">{{ article.publisher }} - {{ article.datetime }}</p>
+                        <a href="{{ article.link }}" class="text-blue-600 hover:text-blue-800" target="_blank">
+                            <p class="text-sm font-bold">{{ article.title }}</p>
+                        </a>
+                        <p class="text-sm text-gray-600">{{ article.summary }}</p>
+                    </div>
+                    {% empty %}
+                    <p class="text-sm font-bold">No news available.</p>
+                    {% endfor %}
+                </div>
+            </div>
+    
+            <!-- Upcoming Events -->
+            <div>
+                <h2 class="text-2xl font-semibold mb-4">Upcoming Events</h2>
+                <div class="space-y-4">
+                    {% for date, event in stock.events.items %}
+                    <div class="bg-gray-50 p-4 rounded-lg shadow-md transition-transform transform hover:scale-105 overflow-hidden">
+                        <p class="text-sm text-gray-600">{{ date }}: {{ event }}</p>
+                    </div>
+                    {% empty %}
+                    <p class="text-xl font-bold">No upcoming events.</p>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
+    
+
+</div>
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        {% if market_open %}
+            const labels = {{ stock.historical_data.dates|safe }};
+        {% else %}
+            const labels = {{ stock.market_time|safe }};
+        
+        {% endif %}
+        const prices = {{ stock.historical_data.prices|safe }};
+        const previousClose = {{ stock.previous_day_close|safe }};
+        const lastPrice = prices[prices.length - 1];
+        
+        
+        const borderColor = lastPrice < previousClose ? 'rgba(255, 99, 132, 1)' : 'rgba(75, 192, 75, 1)';
+        let priceChart;
+    
+        const createChart = (labels, prices, previousClose) => {
+            console.log("last price :",labels);
+            console.log("privous price :now:",previousClose);
+            console.log("price :",prices);
+            console.log(lastPrice < previousClose ? 'red' : 'green');
+                const ctx = document.getElementById('priceChart').getContext('2d');
+                priceChart = new Chart(ctx, {
+                    type: 'line',
+                    data: {
+                        labels: labels,
+                        datasets: [
+                            {
+                                label: '', // No label needed
+                                data: prices,
+                                borderColor: borderColor,
+                                backgroundColor: 'transparent',
+                                fill: false,
+                                tension: 0,
+                                pointRadius: 0,
+                                pointHoverRadius: 5,
+                                pointRadius: function(context) {
+                                    const index = context.dataIndex;
+                                    return index === context.dataset.data.length - 1 ? 5 : 0;
+                                },
+                            },
+                            {
+                                label: 'Previous Close',
+                                data: Array(prices.length).fill(previousClose),
+                                borderColor: 'rgba(0, 0, 0, 0.5)',
+                                borderDash: [5, 5], // Dotted line
+                                fill: false,
+                                tension: 0,
+                                pointRadius: 0,
+                            }
+                        ]
+                    },
+                    options: {
+                        responsive: true,
+                        animation: {
+                            duration: 500,
+                        },
+                        tooltips: {
+                            enabled: true,
+                            mode: 'index',
+                            intersect: false,
+                            backgroundColor: 'rgba(0, 0, 0, 0.7)',
+                            titleFontSize: 16,
+                            bodyFontSize: 14,
+                            callbacks: {
+                                title: tooltipItems => tooltipItems[0].label,
+                                label: tooltipItem => `Price: ${tooltipItem.yLabel}` 
+                            }
+                        },
+                        hover: {
+                            mode: 'index',
+                            intersect: false,
+                            onHover: function(event, chartElement) {
+                                document.body.style.cursor = chartElement.length ? 'pointer' : 'default';
+                            }
+                        },
+                        scales: {
+                            y: {
+                                display: false,
+                            },
+                            x: {
+                                display: false, 
+                            }
+                        },
+                        plugins: {
+                            legend: {
+                                display: false 
+                            }
+                        }
+                    }
+                });
+            };
+    
+        // Create the initial chart
+        createChart(labels, prices, previousClose);
+    
+        // Event listener for buttons
+        const buttons = document.querySelectorAll('.timeframe-button');
+        const symbol = "{{ stock.symbol }}";
+        let selectedDay = ''
+    
+        buttons.forEach(button => {
+            button.addEventListener('click', function() {
+                buttons.forEach(btn => btn.classList.remove('active'));
+                this.classList.add('active');
+    
+                const selectedPeriod = this.getAttribute('data-period');
+                selectedDay = selectedPeriod
+                fetch(`/stock/${symbol}/${selectedPeriod}/`)
+                    .then(response => {
+                        if (!response.ok) {
+                            throw new Error(`HTTP error! status: ${response.status}`);
+                        }
+                        return response.json();
+                    })
+                    .then(data => {
+                        // Update the chart with new data
+                        console.log(data)
+                        if(data.realTime){
+                            priceChart.data.labels = data.market_time
+                            console.log(data.market_time);
+                            console.log(data.prices);
+
+                        }else{
+                            if(data.market_time){
+                                priceChart.data.labels = data.market_time
+                            }else{
+                                priceChart.data.labels = data.dates;
+                            }
+                        }
+                        priceChart.data.datasets[0].data = data.prices;
+                        let latestPrice = data.prices[data.prices.length - 1];4
+                        let previousClose = data.previousClose
+                        priceChart.data.datasets[0].borderColor = latestPrice < previousClose ? 'rgba(255, 99, 132, 1)' : 'rgba(75, 192, 75, 1)';
+
+                        priceChart.data.datasets[1].data = Array(data.prices.length).fill(data.previousClose); // Use the new previous close from the response
+                        priceChart.update(); // Update the chart
+                    })
+                    .catch(error => console.error('Error fetching data:', error));
+            });
+        });
+
+        {% if stock.market_open == 'Open' %}
+            // const symbol = "{{ stock.symbol }}";
+            const socket = new WebSocket('ws://127.0.0.1:8000/ws/stock/' + symbol + '/');
+
+            socket.onopen = function() {
+                console.log("WebSocket connection established");
+            };
+
+            socket.onmessage = function(event) {
+                const data = JSON.parse(event.data);
+                const priceElement = document.getElementById('current_price');
+                const valueChangeElement = document.getElementById('value_change');
+                
+                const valuePercentage_change = document.getElementById('value_percentage_change');
+                if (priceElement && valueChangeElement) {
+                    priceElement.innerText = data.current_price;
+                    valueChangeElement.innerText = data.value_change;
+                    valuePercentage_change.innerText = "("+data.percentage_change+")"
+                    console.log("websocet data.previousClose :",data.color);
+                    
+                    // Update color based on value change
+                    if(data.color == "green"){
+                        colorClass =   'text-green-600'
+                    }else{
+                        colorClass = 'text-red-600'
+                    }
+                    
+                    // const colorClass = data.value_change >= 0 ? 'text-green-600' : 'text-red-600';
+                    priceElement.className = `text-5xl ${colorClass} font-semibold`;
+                    valueChangeElement.className = `${colorClass} font-semibold`;
+                    
+                    if(selectedDay == "1d"){
+                    let previousCloseRealtime = data.previousClose
+                    priceChart.data.datasets[0].data = data.prices;
+                    let latestPrice = data.prices[data.prices.length - 1];4
+                    priceChart.data.datasets[0].borderColor = latestPrice < data.previousClose ? 'rgba(255, 99, 132, 1)' : 'rgba(75, 192, 75, 1)';
+                    // priceChart.data.datasets[1].data = Array(data.prices.length).fill(data.previousClose);
+                    }
+                    priceChart.update(); // Update the chart
+
+                } else {
+                    console.error('One or more elements not found');
+                }
+            };
+
+            socket.onclose = function() {
+                console.error('WebSocket closed unexpectedly');
+            };
+
+            socket.onerror = function(e) {
+                console.error("WebSocket error:", e);
+            };
+        {% endif %}
+    });
+</script>
+
+    
+{% endblock %}

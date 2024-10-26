@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+    <title>{% block title %}Default Title{% endblock %}</title>
+
+    <style>
+        /* For Webkit Browsers (Chrome, Safari) */
+::-webkit-scrollbar {
+    width: 12px; /* Width of the scrollbar */
+}
+
+::-webkit-scrollbar-track {
+    background: #f1f1f1; /* Background of the scrollbar track */
+    border-radius: 10px; /* Rounded corners for the track */
+}
+
+::-webkit-scrollbar-thumb {
+    background: #888; /* Color of the scrollbar thumb */
+    border-radius: 10px; /* Rounded corners for the thumb */
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: #555; /* Color when hovering over the scrollbar thumb */
+}
+
+/* For Firefox */
+.scrollbar {
+    scrollbar-width: thin; /* Makes the scrollbar thinner */
+    scrollbar-color: #888 #f1f1f1; /* scrollbar-color: thumb track */
+}
+
+/* Apply the scrollbar styles to the specific scrollable div */
+
+
+@keyframes pulse {
+    0% {
+        transform: scale(1);
+        opacity: 1;
+    }
+    50% {
+        transform: scale(1.05);
+        opacity: 0.8;
+    }
+    100% {
+        transform: scale(1);
+        opacity: 1;
+    }
+}
+
+.market-status {
+    display: inline-block;
+    padding: 0.5rem 1rem;
+    border-radius: 0.25rem;
+    font-weight: bold;
+    transition: all 0.3s ease;
+}
+
+.market-open {
+    animation: pulse 1s infinite;
+    color: green;
+}
+
+.market-closed {
+    color: red;
+}
+
+@keyframes pulse {
+    0% {
+        transform: scale(1);
+        opacity: 1;
+    }
+    50% {
+        transform: scale(1.05);
+        opacity: 0.8;
+    }
+    100% {
+        transform: scale(1);
+        opacity: 1;
+    }
+}
+
+.market-status {
+    display: inline-block;
+    padding: 0.5rem 1rem;
+    border-radius: 0.25rem;
+    font-weight: bold;
+    transition: all 0.3s ease;
+}
+
+.market-open {
+    animation: pulse 1s infinite;
+    color: green;
+    border: 2px solid green; /* Add border for market open */
+}
+
+.market-closed {
+    color: red;
+    border: 2px solid red; /* Add border for market closed */
+}
+
+.timeframe-button {
+    padding: 10px 15px;
+    background-color: #f0f0f0;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    transition: background-color 0.3s;
+}
+
+.timeframe-button:hover {
+    background-color: #e0e0e0;
+}
+
+.timeframe-button.active {
+    background-color: gray;
+    color: white;
+}
+
+
+.summary-text {
+            overflow: hidden;
+            max-height: 3em; /* Adjust based on line height */
+            transition: max-height 0.3s ease;
+        }
+    
+        .summary-text.expanded {
+            max-height: none;
+        }
+    
+        .read-more-btn {
+            background: none;
+            border: none;
+            color: blue;
+            cursor: pointer;
+            text-decoration: underline;
+            padding: 0;
+        }
+
+
+        #chartjs-tooltip {
+    position: absolute;
+    background-color: rgba(0, 0, 0, 0.8);
+    color: white;
+    padding: 5px;
+    border-radius: 5px;
+    pointer-events: none;
+    transform: translate(-50%, 0);
+}
+
+#vertical-line {
+    position: absolute;
+    width: 2px;
+    background: rgba(0, 0, 0, 0.7);
+    height: 300px; /* Adjust the height based on your chart size */
+}
+
+    </style>
+</head>
+<body>
+    <header class="bg-gray-800 text-white py-4">
+        <div class="container mx-auto flex justify-between items-center">
+            <div class="ml-4"> <!-- Added margin right here -->
+                <h1 class="text-2xl font-bold">Welcome to Stock Market Tracker</h1>
+                <p class="mt-1 text-gray-400">Your one-stop solution for stock market insights.</p>
+            </div>
+            
+
+            <a href="{% url 'home' %}"><div class="text-3xl font-bold mr-5">📈 SMT</div></a> <!-- Text-based logo on the right -->
+        </div>
+    </header>
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+
+    {% block body %}
+    {% endblock %}
+    
+    <div class="bg-gray-800 text-white py-8 mt-15">
+        <div class="container mx-auto flex flex-col md:flex-row justify-between items-center">
+            <div class="mb-4 md:mb-0 ml-2">
+                <h2 class="text-xl font-bold">Stock Market Tracker</h2>
+                <p class="text-gray-400">Stay updated with the latest stock trends and news.</p>
+            </div>
+            <div class="flex space-x-4">
+                <a href="#" class="text-gray-400 hover:text-white">About Us</a>
+                <a href="#" class="text-gray-400 hover:text-white">Contact</a>
+                <a href="#" class="text-gray-400 hover:text-white">Privacy Policy</a>
+                <a href="#" class="text-gray-400 hover:text-white">Terms of Service</a>
+            </div>
+        </div>
+        <div class="text-center mt-4">
+            <p class="text-gray-400 text-sm">&copy; 2024 Stock Market Tracker. All rights reserved.</p>
+        </div>
+    </div>
+    {% block script %}
+    <!-- Include Chart.js -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+    {% endblock %}
+</body>
+</html>
