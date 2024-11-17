@@ -4,7 +4,14 @@ import datetime as dt
 import requests
 from django.shortcuts import render
 import yfinance as yf
-import math  # Import the math module
+from django.utils.safestring import mark_safe
+import json
+from django.core.cache import cache
+from forex_python.converter import CurrencyCodes
+import math  
+from django.http import JsonResponse, Http404
+import pytz
+from datetime import datetime, timedelta
 
 # List of Nifty indices with their symbols
 nifty_indices = {
@@ -232,9 +239,6 @@ def check_market_status(exchange):
     else:
         return False
 
-import yfinance as yf
-from datetime import datetime, timedelta
-
 
 def fetch_index_data_yahoo(symbol):
     try:
@@ -346,15 +350,8 @@ def StockListPage(request):
     return render(request, 'index.html', {'index_data': index_data})
 
 
-import requests
-import csv
-from django.core.cache import cache
-from django.template.loader import render_to_string
-from django.utils.safestring import mark_safe
-import json
-from django.core.cache import cache
-from forex_python.converter import CurrencyCodes
-from django.http import Http404
+
+# from django.http import Http404
 API_KEY = 'cs1su59r01qsperufrggcs1su59r01qsperufrh0'  # Replace with your Finnhub API key
 BASE_URL = 'https://finnhub.io/api/v1'
 
@@ -679,11 +676,7 @@ def stock_detail(request, symbol):
         print(f"An error occurred while fetching stock data: {e}")
         return render(request, 'stockPage.html', {'error': 'Unable to fetch stock data. Please try again later.'})
 
-from django.http import JsonResponse, Http404
-
-
-from datetime import datetime, timedelta
-import pytz  # Ensure you have pytz installed
+  # Ensure you have pytz installed
 
 
 # Period mapping
@@ -721,9 +714,6 @@ def get_previous_close(symbol, start_date):
         attempts += 1
 
     return None
-
-from datetime import datetime, timedelta
-
 
 def stock_history_dynamic(request, symbol, period):
     # Normalize the period using the mapping

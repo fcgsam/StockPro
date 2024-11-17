@@ -157,12 +157,22 @@ CACHES = {
 }
 ASGI_APPLICATION = 'stockMarketPro.asgi.application'
 
+# CHANNEL_LAYERS = {
+#     'default': {
+#         'BACKEND': 'channels_redis.core.RedisChannelLayer',
+#         'CONFIG': {
+#             "hosts": [
+#                 "redis://:uvMWLncJzTiF7HM4VyyIpJQzHkNcrcGp@redis-11673.c93.us-east-1-3.ec2.redns.redis-cloud.com:11673"
+#             ],
+#         },
+#     },
+# }
 CHANNEL_LAYERS = {
     'default': {
         'BACKEND': 'channels_redis.core.RedisChannelLayer',
         'CONFIG': {
             "hosts": [
-                "redis://:uvMWLncJzTiF7HM4VyyIpJQzHkNcrcGp@redis-11673.c93.us-east-1-3.ec2.redns.redis-cloud.com:11673"
+                "redis://:80esu3AN3n8sqlIcXcJFCqWjcWwfsqTx@redis-11228.c84.us-east-1-2.ec2.redns.redis-cloud.com:11228"
             ],
         },
     },
